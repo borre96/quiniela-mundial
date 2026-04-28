@@ -100,11 +100,22 @@ export default function QuinielaPage() {
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({});
   const [results, setResults] = useState<Record<string, MatchResult>>({});
 
-  const [pickTypes, setPickTypes] = useState<SpecialPickType[]>([]);
-  const [bonusSelections, setBonusSelections] = useState<Record<string, string>>(
-    {}
-  );
-  const [players, setPlayers] = useState<Player[]>([]);
+const [pickTypes, setPickTypes] = useState<SpecialPickType[]>([]);
+
+const [bonusSelections, setBonusSelections] =
+  useState<Record<string, string>>({});
+
+const [bonusPickMeta, setBonusPickMeta] = useState<
+  Record<
+    string,
+    {
+      points_awarded: number | null;
+      scored_at: string | null;
+    }
+  >
+>({});
+
+const [players, setPlayers] = useState<Player[]>([]);
 
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -588,63 +599,91 @@ export default function QuinielaPage() {
   }, [matches, predictions]);
 
   const bonusCompleted = useMemo(() => {
-    return pickTypes.filter((pickType) => bonusSelections[pickType.id]).length;
-  }, [pickTypes, bonusSelections]);
+  return pickTypes.filter((pickType) => bonusSelections[pickType.id]).length;
+}, [pickTypes, bonusSelections]);
 
-  const totalBonusPoints = useMemo(() => {
-    return pickTypes.reduce((total, pickType) => total + pickType.points, 0);
-  }, [pickTypes]);
+const totalBonusPoints = useMemo(() => {
+  return pickTypes.reduce((total, pickType) => total + pickType.points, 0);
+}, [pickTypes]);
 
-  const orderedPickTypes = useMemo(() => {
-    return [...pickTypes].sort(
-      (a, b) => BONUS_ORDER.indexOf(a.code) - BONUS_ORDER.indexOf(b.code)
-    );
-  }, [pickTypes]);
+const bonusStatusStats = useMemo(() => {
+  let hit = 0;
+  let pending = 0;
+  let points = 0;
 
-  const teamOptions = useMemo(() => {
-    const teamsById = new Map<string, Team>();
+  pickTypes.forEach((pick) => {
+    const meta = bonusPickMeta[pick.id];
 
-    for (const match of matches) {
-      teamsById.set(match.home_team.id, match.home_team);
-      teamsById.set(match.away_team.id, match.away_team);
+    points += meta?.points_awarded || 0;
+
+    if (!meta?.scored_at) {
+      pending++;
+      return;
     }
 
-    return [...teamsById.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [matches]);
-
-  const visibleMatches = useMemo(() => {
-    let rows = [...matches];
-
-    if (roundFilter === "unfilled") {
-      rows = rows.filter((match) => isUnfilled(match));
+    if ((meta?.points_awarded || 0) > 0) {
+      hit++;
     }
+  });
 
-    if (roundFilter === "urgent") {
-      rows = rows.filter((match) => isUrgentUnfilled(match));
-    }
+  return {
+    hit,
+    pending,
+    miss: Math.max(pickTypes.length - pending - hit, 0),
+    points,
+  };
+}, [pickTypes, bonusPickMeta]);
 
-    if (roundFilter === "exact") {
-      rows = rows.filter((match) => predictionStatus(match.id) === "exact");
-    }
+const orderedPickTypes = useMemo(() => {
+  return [...pickTypes].sort(
+    (a, b) => BONUS_ORDER.indexOf(a.code) - BONUS_ORDER.indexOf(b.code)
+  );
+}, [pickTypes]);
 
-    if (roundFilter === "correct") {
-      rows = rows.filter((match) => predictionStatus(match.id) === "correct");
-    }
+const teamOptions = useMemo(() => {
+  const teamsById = new Map<string, Team>();
 
-    if (roundFilter === "wrong") {
-      rows = rows.filter((match) => predictionStatus(match.id) === "wrong");
-    }
-
-    return rows;
-  }, [matches, predictions, roundFilter]);
-
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        Cargando quiniela...
-      </main>
-    );
+  for (const match of matches) {
+    teamsById.set(match.home_team.id, match.home_team);
+    teamsById.set(match.away_team.id, match.away_team);
   }
+
+  return [...teamsById.values()].sort((a, b) => a.name.localeCompare(b.name));
+}, [matches]);
+
+const visibleMatches = useMemo(() => {
+  let rows = [...matches];
+
+  if (roundFilter === "unfilled") {
+    rows = rows.filter((match) => isUnfilled(match));
+  }
+
+  if (roundFilter === "urgent") {
+    rows = rows.filter((match) => isUrgentUnfilled(match));
+  }
+
+  if (roundFilter === "exact") {
+    rows = rows.filter((match) => predictionStatus(match.id) === "exact");
+  }
+
+  if (roundFilter === "correct") {
+    rows = rows.filter((match) => predictionStatus(match.id) === "correct");
+  }
+
+  if (roundFilter === "wrong") {
+    rows = rows.filter((match) => predictionStatus(match.id) === "wrong");
+  }
+
+  return rows;
+}, [matches, predictions, roundFilter]);
+
+if (loading) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+      Cargando quiniela...
+    </main>
+  );
+}
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
