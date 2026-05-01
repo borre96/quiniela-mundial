@@ -759,35 +759,56 @@ if (loading) {
           </div>
 
           {viewMode === "matches" && (
-            <div className="mt-6 grid gap-4 md:grid-cols-4">
-              <div className="rounded-2xl bg-white/8 p-4">
-                <p className="text-xs text-white/45">Puntos acumulados</p>
-                <p className="mt-2 text-3xl font-black">
-                  {globalStats?.total_points ?? 0}
-                </p>
-              </div>
+  <div className="mt-6 grid gap-4 md:grid-cols-4">
+    <div className="rounded-2xl bg-white/8 p-4">
+      <p className="text-xs text-white/45">
+        Puntos grupos
+      </p>
 
-              <div className="rounded-2xl bg-white/8 p-4">
-                <p className="text-xs text-white/45">Resultados exactos</p>
-                <p className="mt-2 text-3xl font-black">{counts.exact}</p>
-              </div>
+      <p className="mt-2 text-3xl font-black text-emerald-300">
+        {groupStagePoints}
+      </p>
 
-              <div className="rounded-2xl bg-white/8 p-4">
-                <p className="text-xs text-white/45">Partidos sin llenar</p>
-                <p className="mt-2 text-3xl font-black">{counts.unfilled}</p>
-              </div>
+      <p className="mt-1 text-[11px] text-white/35">
+        de esta sección
+      </p>
+    </div>
 
-              <div className="rounded-2xl bg-white/8 p-4">
-                <p className="text-xs text-white/45">Por llenar urgentes</p>
-                <p className="mt-1 text-[11px] text-white/35">
-                  Próximas 24 horas
-                </p>
-                <p className="mt-2 text-3xl font-black text-red-300">
-                  {counts.urgent}
-                </p>
-              </div>
-            </div>
-          )}
+    <div className="rounded-2xl bg-white/8 p-4">
+      <p className="text-xs text-white/45">
+        Resultados exactos
+      </p>
+
+      <p className="mt-2 text-3xl font-black">
+        {counts.exact}
+      </p>
+    </div>
+
+    <div className="rounded-2xl bg-white/8 p-4">
+      <p className="text-xs text-white/45">
+        Partidos sin llenar
+      </p>
+
+      <p className="mt-2 text-3xl font-black">
+        {counts.unfilled}
+      </p>
+    </div>
+
+    <div className="rounded-2xl bg-white/8 p-4">
+      <p className="text-xs text-white/45">
+        Por llenar urgentes
+      </p>
+
+      <p className="mt-1 text-[11px] text-white/35">
+        Próximas 24 horas
+      </p>
+
+      <p className="mt-2 text-3xl font-black text-red-300">
+        {counts.urgent}
+      </p>
+    </div>
+  </div>
+)}
 
           {viewMode === "bonus" && (
             <div className="mt-6 grid gap-4 md:grid-cols-3">
