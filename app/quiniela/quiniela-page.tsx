@@ -662,13 +662,21 @@ async function loadPage() {
 
   setSaving(true);
 
-  const { error } = await supabase.rpc("save_predictions_batch", {
-    p_predictions: rows.map((row) => ({
-      match_id: row.match_id,
-      home_score_pred: row.home_score_pred,
-      away_score_pred: row.away_score_pred,
-    })),
-  });
+  const { data, error } = await supabase
+    .from("predictions")
+    .upsert(rows, {
+      onConflict: "user_id,match_id",
+    })
+    .select(`
+      id,
+      match_id,
+      home_score_pred,
+      away_score_pred,
+      points_awarded,
+      is_exact,
+      is_correct_outcome,
+      scored_at
+    `);
 
   if (error) {
     setSaving(false);
@@ -676,7 +684,16 @@ async function loadPage() {
     return;
   }
 
-  await loadPage();
+  const savedPredictions: Record<string, Prediction> = {};
+
+  for (const prediction of data || []) {
+    savedPredictions[prediction.match_id] = prediction;
+  }
+
+  setPredictions((current) => ({
+    ...current,
+    ...savedPredictions,
+  }));
 
   setLastSavedAt(
     new Date().toLocaleTimeString("es-MX", {
@@ -736,12 +753,11 @@ async function saveBonus() {
     updated_at: new Date().toISOString(),
   }));
 
-  const { error } = await supabase.rpc("save_special_picks_batch", {
-    p_picks: rows.map((row) => ({
-      pick_type_id: row.pick_type_id,
-      selection: row.selection,
-    })),
-  });
+  const { error } = await supabase
+    .from("user_special_picks")
+    .upsert(rows, {
+      onConflict: "user_id,pick_type_id",
+    });
 
   if (error) {
     setSaving(false);
