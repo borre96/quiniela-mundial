@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type GlobalRow = {
@@ -8,6 +8,7 @@ type GlobalRow = {
   display_name: string;
   match_points: number;
   bonus_points: number;
+  knockout_points?: number;
   total_points: number;
   exact_hits: number;
   correct_outcomes: number;
@@ -20,15 +21,37 @@ type GroupRow = {
   invite_code: string;
   user_id: string;
   display_name: string;
+  match_points?: number;
+  bonus_points?: number;
+  knockout_points?: number;
   total_points: number;
   exact_hits: number;
   correct_outcomes: number;
   ranking_position: number;
 };
 
+type LeaderboardRow = {
+  scope_key: string;
+  user_id: string;
+  display_name: string;
+  match_points: number;
+  bonus_points: number;
+  knockout_points: number;
+  total_points: number;
+  exact_hits: number;
+  correct_outcomes: number;
+  ranking_position: number;
+};
+
+type GroupTab = {
+  id: string;
+  name: string;
+  rows: LeaderboardRow[];
+};
+
 export default function RankingsPage() {
   const [userId, setUserId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"global" | "groups">("global");
+  const [activeScope, setActiveScope] = useState<string>("global");
   const [requestedGroupId, setRequestedGroupId] = useState<string | null>(null);
   const [globalRows, setGlobalRows] = useState<GlobalRow[]>([]);
   const [groupRows, setGroupRows] = useState<GroupRow[]>([]);
@@ -41,7 +64,7 @@ export default function RankingsPage() {
 
     if (groupId) {
       setRequestedGroupId(groupId);
-      setTab("groups");
+      setActiveScope(groupId);
     }
 
     loadRankings();
@@ -105,33 +128,79 @@ export default function RankingsPage() {
     }
   }
 
-  const top3 = globalRows.slice(0, 3);
-  const myGlobalRow = globalRows.find((row) => row.user_id === userId);
+  const normalizedGlobalRows: LeaderboardRow[] = globalRows.map((row) => ({
+    scope_key: "global",
+    user_id: row.user_id,
+    display_name: row.display_name,
+    match_points: row.match_points || 0,
+    bonus_points: row.bonus_points || 0,
+    knockout_points: row.knockout_points || 0,
+    total_points: row.total_points || 0,
+    exact_hits: row.exact_hits || 0,
+    correct_outcomes: row.correct_outcomes || 0,
+    ranking_position: row.ranking_position || 0,
+  }));
 
-  const groupedByGroup = groupRows.reduce<
-    Record<string, { name: string; rows: GroupRow[] }>
-  >((acc, row) => {
-    if (!acc[row.group_id]) {
-      acc[row.group_id] = {
-        name: row.group_name,
-        rows: [],
-      };
+  const groupTabs: GroupTab[] = useMemo(() => {
+    const grouped = groupRows.reduce<Record<string, GroupTab>>((acc, row) => {
+      if (!acc[row.group_id]) {
+        acc[row.group_id] = {
+          id: row.group_id,
+          name: row.group_name,
+          rows: [],
+        };
+      }
+
+      acc[row.group_id].rows.push({
+        scope_key: row.group_id,
+        user_id: row.user_id,
+        display_name: row.display_name,
+        match_points: row.match_points || 0,
+        bonus_points: row.bonus_points || 0,
+        knockout_points: row.knockout_points || 0,
+        total_points: row.total_points || 0,
+        exact_hits: row.exact_hits || 0,
+        correct_outcomes: row.correct_outcomes || 0,
+        ranking_position: row.ranking_position || 0,
+      });
+
+      return acc;
+    }, {});
+
+    return Object.values(grouped).sort((a, b) => {
+      if (requestedGroupId && a.id === requestedGroupId) return -1;
+      if (requestedGroupId && b.id === requestedGroupId) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [groupRows, requestedGroupId]);
+
+  const activeGroup = groupTabs.find((group) => group.id === activeScope);
+  const activeRows = activeScope === "global" ? normalizedGlobalRows : activeGroup?.rows || [];
+  const activeTitle = activeScope === "global" ? "Tabla general" : activeGroup?.name || "Tu Tanda";
+  const activePositionLabel = activeScope === "global" ? "Tu posición global" : `Tu posición · ${activeGroup?.name || "Tu Tanda"}`;
+  const myActiveRow = activeRows.find((row) => row.user_id === userId);
+  const top3 = activeRows.slice(0, 3);
+
+  function changeScope(scope: string) {
+    setActiveScope(scope);
+
+    const url = new URL(window.location.href);
+
+    if (scope === "global") {
+      url.searchParams.delete("groupId");
+    } else {
+      url.searchParams.set("groupId", scope);
     }
 
-    acc[row.group_id].rows.push(row);
-    return acc;
-  }, {});
-
-  const orderedGroups = Object.entries(groupedByGroup).sort(([a], [b]) => {
-    if (requestedGroupId && a === requestedGroupId) return -1;
-    if (requestedGroupId && b === requestedGroupId) return 1;
-    return groupedByGroup[a].name.localeCompare(groupedByGroup[b].name);
-  });
+    window.history.replaceState({}, "", url.toString());
+  }
 
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#F5F1E8] text-[#111]">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-black/45">Cargando La Tabla...</p>
+        <p className="text-sm font-black uppercase tracking-[0.18em] text-black/45">
+          Cargando La Tabla...
+        </p>
       </main>
     );
   }
@@ -179,78 +248,76 @@ export default function RankingsPage() {
           </p>
         </div>
 
-        {myGlobalRow && (
+        {myActiveRow && (
           <div className="mb-8 rounded-none border border-black/15 bg-[#111] p-6 text-[#F5F1E8]">
             <p className="text-sm font-bold uppercase tracking-wide text-[#D8B45A]">
-              Tu posición global
+              {activePositionLabel}
             </p>
 
-            <div className="mt-4 grid gap-4 md:grid-cols-5">
+            <div className="mt-4 grid gap-4 md:grid-cols-6">
               <div>
                 <p className="text-sm text-current/50">Ranking</p>
-                <p className="text-3xl font-black">
-                  #{myGlobalRow.ranking_position}
-                </p>
+                <p className="text-3xl font-black">#{myActiveRow.ranking_position}</p>
               </div>
 
               <div>
                 <p className="text-sm text-current/50">Total</p>
-                <p className="text-3xl font-black text-[#D8B45A]">
-                  {myGlobalRow.total_points}
-                </p>
+                <p className="text-3xl font-black text-[#D8B45A]">{myActiveRow.total_points}</p>
               </div>
 
               <div>
                 <p className="text-sm text-current/50">Partidos</p>
-                <p className="text-3xl font-black">
-                  {myGlobalRow.match_points}
-                </p>
+                <p className="text-3xl font-black">{myActiveRow.match_points}</p>
               </div>
 
               <div>
                 <p className="text-sm text-current/50">Bonus</p>
-                <p className="text-3xl font-black text-[#D8B45A]">
-                  {myGlobalRow.bonus_points}
-                </p>
+                <p className="text-3xl font-black text-[#D8B45A]">{myActiveRow.bonus_points}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-current/50">Eliminatorias</p>
+                <p className="text-3xl font-black">{myActiveRow.knockout_points}</p>
               </div>
 
               <div>
                 <p className="text-sm text-current/50">Exactos</p>
-                <p className="text-3xl font-black">
-                  {myGlobalRow.exact_hits}
-                </p>
+                <p className="text-3xl font-black">{myActiveRow.exact_hits}</p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mb-8 flex gap-3">
+        <div className="mb-8 flex flex-wrap gap-3">
           <button
-            onClick={() => setTab("global")}
-            className={`rounded-none px-5 py-3 font-bold ${
-              tab === "global" ? "bg-[#111] text-[#F5F1E8]" : "bg-black/[0.05]"
+            onClick={() => changeScope("global")}
+            className={`rounded-none px-5 py-3 text-sm font-black uppercase tracking-[0.12em] transition ${
+              activeScope === "global" ? "bg-[#111] text-[#F5F1E8]" : "bg-black/[0.05] hover:bg-black/[0.08]"
             }`}
           >
             Global
           </button>
 
-          <button
-            onClick={() => setTab("groups")}
-            className={`rounded-none px-5 py-3 font-bold ${
-              tab === "groups" ? "bg-[#111] text-[#F5F1E8]" : "bg-black/[0.05]"
-            }`}
-          >
-            Mi Tanda
-          </button>
+          {groupTabs.map((group) => (
+            <button
+              key={group.id}
+              onClick={() => changeScope(group.id)}
+              className={`rounded-none px-5 py-3 text-sm font-black uppercase tracking-[0.12em] transition ${
+                activeScope === group.id ? "bg-[#111] text-[#F5F1E8]" : "bg-black/[0.05] hover:bg-black/[0.08]"
+              }`}
+            >
+              {group.name}
+            </button>
+          ))}
         </div>
 
         {error && (
-          <div className="mb-6 rounded-none border border-red-400/30 bg-red-500/10 p-4 text-red-200">
+          <div className="mb-6 rounded-none border border-red-400/30 bg-red-500/10 p-4 text-[#9F1D16]">
             {error}
           </div>
         )}
 
-        {tab === "global" && (
+        {activeRows.length > 0 ? (
           <>
             <div className="mb-10 grid gap-5 md:grid-cols-3">
               {top3.map((player, index) => {
@@ -258,20 +325,16 @@ export default function RankingsPage() {
 
                 return (
                   <div
-                    key={player.user_id}
+                    key={`${player.scope_key}-top-${player.user_id}`}
                     className={`rounded-none border p-6 ${
-                      isMe
-                        ? "border-[#9F1D16]/50 bg-[#9F1D16]/10"
-                        : "border-black/10 bg-[#F8F3EA]"
+                      isMe ? "border-[#9F1D16]/50 bg-[#9F1D16]/10" : "border-black/10 bg-[#F8F3EA]"
                     }`}
                   >
                     <div className="mb-4 text-5xl">
                       {index === 0 ? "🥇" : index === 1 ? "🥈" : "🥉"}
                     </div>
 
-                    <p className="text-sm text-current/50">
-                      #{player.ranking_position}
-                    </p>
+                    <p className="text-sm text-current/50">#{player.ranking_position}</p>
 
                     <h3 className="mt-2 text-2xl font-bold">
                       {player.display_name}
@@ -282,12 +345,11 @@ export default function RankingsPage() {
                       )}
                     </h3>
 
-                    <p className="mt-4 text-4xl font-black text-[#D8B45A]">
-                      {player.total_points}
-                    </p>
+                    <p className="mt-4 text-4xl font-black text-[#D8B45A]">{player.total_points}</p>
 
                     <p className="mt-2 text-sm text-current/50">
                       {player.match_points} partidos · {player.bonus_points} bonus
+                      {player.knockout_points > 0 ? ` · ${player.knockout_points} eliminatorias` : ""}
                     </p>
                   </div>
                 );
@@ -296,19 +358,17 @@ export default function RankingsPage() {
 
             <div className="overflow-hidden rounded-none border border-black/10 bg-[#F8F3EA]">
               <div className="border-b border-black/10 p-5">
-                <h3 className="text-xl font-black uppercase tracking-[-0.03em]">Tabla general</h3>
+                <h3 className="text-xl font-black uppercase tracking-[-0.03em]">{activeTitle}</h3>
               </div>
 
               <div className="divide-y divide-black/10">
-                {globalRows.map((row) => {
+                {activeRows.map((row) => {
                   const isMe = row.user_id === userId;
 
                   return (
                     <div
-                      key={row.user_id}
-                      className={`flex items-center justify-between gap-4 p-5 ${
-                        isMe ? "bg-[#9F1D16]/10" : ""
-                      }`}
+                      key={`${row.scope_key}-row-${row.user_id}`}
+                      className={`flex items-center justify-between gap-4 p-5 ${isMe ? "bg-[#9F1D16]/10" : ""}`}
                     >
                       <div>
                         <p className="font-bold">
@@ -326,12 +386,11 @@ export default function RankingsPage() {
                       </div>
 
                       <div className="text-right">
-                        <p className="text-2xl font-black text-[#D8B45A]">
-                          {row.total_points}
-                        </p>
+                        <p className="text-2xl font-black text-[#D8B45A]">{row.total_points}</p>
 
                         <p className="mt-1 text-xs text-current/45">
                           {row.match_points} partidos · {row.bonus_points} bonus
+                          {row.knockout_points > 0 ? ` · ${row.knockout_points} eliminatorias` : ""}
                         </p>
                       </div>
                     </div>
@@ -340,67 +399,9 @@ export default function RankingsPage() {
               </div>
             </div>
           </>
-        )}
-
-        {tab === "groups" && (
-          <div className="space-y-8">
-            {orderedGroups.map(([groupId, group]) => {
-              const myGroupRow = group.rows.find((r) => r.user_id === userId);
-
-              return (
-                <div
-                  key={groupId}
-                  className="overflow-hidden rounded-none border border-black/10 bg-[#F8F3EA]"
-                >
-                  <div className="border-b border-black/10 p-5">
-                    <h3 className="text-2xl font-black uppercase tracking-[-0.04em]">{group.name}</h3>
-
-                    {myGroupRow && (
-                      <p className="mt-2 text-sm text-[#D8B45A]">
-                        Tu posición: #{myGroupRow.ranking_position} ·{" "}
-                        {myGroupRow.total_points} pts
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="divide-y divide-black/10">
-                    {group.rows.map((row) => {
-                      const isMe = row.user_id === userId;
-
-                      return (
-                        <div
-                          key={`${row.group_id}-${row.user_id}`}
-                          className={`flex items-center justify-between p-5 ${
-                            isMe ? "bg-[#9F1D16]/10" : ""
-                          }`}
-                        >
-                          <div>
-                            <p className="text-lg font-bold">
-                              #{row.ranking_position} {row.display_name}
-                              {isMe && (
-                                <span className="ml-2 rounded-full bg-[#9F1D16] px-2 py-1 text-xs text-[#F5F1E8]">
-                                  Tú
-                                </span>
-                              )}
-                            </p>
-                          </div>
-
-                          <div className="text-2xl font-black text-[#D8B45A]">
-                            {row.total_points}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-
-            {groupRows.length === 0 && (
-              <div className="rounded-none border border-black/10 bg-[#F8F3EA] p-8 text-center">
-                Aún no tienes grupos.
-              </div>
-            )}
+        ) : (
+          <div className="rounded-none border border-black/10 bg-[#F8F3EA] p-8 text-center font-bold text-black/50">
+            {activeScope === "global" ? "Aún no hay jugadores en la tabla." : "Aún no hay jugadores en esta Tanda."}
           </div>
         )}
       </section>

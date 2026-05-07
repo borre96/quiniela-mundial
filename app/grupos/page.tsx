@@ -398,7 +398,7 @@ export default function GruposPage() {
             {groups.map((group) => (
               <article
                 key={group.group_id}
-                className="border border-black/10 bg-[#F5F1E8] p-5 transition hover:-translate-y-1 hover:shadow-md"
+                className="border border-black/10 bg-[#F5F1E8] p-5 transition hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(17,17,17,0.10)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -406,53 +406,55 @@ export default function GruposPage() {
                       {group.role === "owner" ? "Organizador" : "Participante"}
                     </p>
 
-                    <h3 className="mt-2 text-2xl font-black uppercase tracking-[-0.04em]">
+                    <h3 className="mt-2 text-2xl font-black uppercase tracking-[-0.04em] md:text-3xl">
                       {group.group_name}
                     </h3>
                   </div>
 
-                  <span className="border border-black/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-black/45">
+                  <span className="shrink-0 border border-black/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-black/45">
                     {group.members_count} miembro{group.members_count === 1 ? "" : "s"}
                   </span>
                 </div>
 
-                {group.role === "owner" && (
-                  <div className="mt-5 border border-black/10 bg-[#F8F3EA] p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.14em] text-black/45">
-                      Código para invitar
-                    </p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
+                  <Link
+                    href={`/rankings?groupId=${group.group_id}`}
+                    className="flex min-h-[72px] items-center justify-center bg-[#111] px-5 py-5 text-center text-sm font-black uppercase tracking-[0.16em] text-[#F5F1E8] shadow-[0_14px_34px_rgba(17,17,17,0.14)] transition hover:-translate-y-0.5 hover:bg-[#9F1D16]"
+                  >
+                    Ver La Tabla
+                  </Link>
 
-                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="select-all text-2xl font-black tracking-[0.14em]">
-                        {group.invite_code}
-                      </p>
+                  <Link
+                    href={`/quiniela?groupId=${group.group_id}`}
+                    className="flex min-h-[72px] items-center justify-center border border-black/25 px-5 py-5 text-center text-sm font-black uppercase tracking-[0.14em] transition hover:bg-white/60"
+                  >
+                    Ajustar quiniela
+                  </Link>
+                </div>
+
+                {group.role === "owner" && (
+                  <div className="mt-5 border-t border-black/10 pt-4">
+                    <div className="flex flex-col gap-3 text-black/45 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em]">
+                          Código para invitar
+                        </p>
+
+                        <p className="mt-1 select-all text-sm font-black uppercase tracking-[0.16em] text-black/60">
+                          {group.invite_code}
+                        </p>
+                      </div>
 
                       <button
                         type="button"
                         onClick={() => copyToClipboard(group.invite_code)}
-                        className="bg-[#111] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5"
+                        className="self-start border border-black/15 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-black/55 transition hover:border-black/30 hover:bg-white/60 sm:self-auto"
                       >
-                        Copiar
+                        Copiar código
                       </button>
                     </div>
                   </div>
                 )}
-
-                <div className="mt-5 grid gap-3 border-t border-black/10 pt-4 sm:grid-cols-2">
-                  <Link
-                    href={`/quiniela?groupId=${group.group_id}`}
-                    className="flex items-center justify-center bg-[#111] px-4 py-4 text-center text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5"
-                  >
-                    Entrar a mi quiniela
-                  </Link>
-
-                  <Link
-                    href={`/rankings?groupId=${group.group_id}`}
-                    className="flex items-center justify-center border border-black/25 px-4 py-4 text-center text-xs font-black uppercase tracking-[0.14em] transition hover:bg-white/60"
-                  >
-                    Ver La Tabla
-                  </Link>
-                </div>
               </article>
             ))}
           </div>
