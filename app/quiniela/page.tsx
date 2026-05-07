@@ -1094,90 +1094,66 @@ if (loading) {
   </div>
 </div>
 
-<div className="mt-4 flex flex-wrap items-center gap-3">
-  <div className="border border-black/10 bg-[#EFE6D6] px-4 py-2">
-    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-black/40">
-      Estado
-    </p>
-
-    <p className="mt-1 text-sm font-black text-emerald-700">
-      Guardado ✓
-    </p>
-  </div>
-
-  {lastSavedAt && (
-    <div className="border border-black/10 bg-[#F5F1E8] px-4 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-black/40">
-        Última actualización
-      </p>
-
-      <p className="mt-1 text-sm font-black">
-        {lastSavedAt}
-      </p>
-    </div>
-  )}
-
-  {!knockoutsPublished && (
-    <div className="border border-amber-300/30 bg-amber-300/10 px-4 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-800">
-        Eliminatorias
-      </p>
-
-      <p className="mt-1 text-sm font-black text-amber-900">
-        Las eliminatorias se habilitarán cuando terminen los grupos.
-      </p>
-    </div>
-  )}
 </div>
 
-</div>
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-4">
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => setViewMode("matches")}
+                className={`rounded-none px-4 py-3 font-bold ${
+                  viewMode === "matches"
+                    ? "bg-[#111] text-[#F5F1E8]"
+                    : "bg-black/[0.05] text-[#111]/80"
+                }`}
+              >
+                Partidos
+              </button>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              onClick={() => setViewMode("matches")}
-              className={`rounded-none px-4 py-3 font-bold ${
-                viewMode === "matches"
-                  ? "bg-[#111] text-[#F5F1E8]"
-                  : "bg-black/[0.05] text-[#111]/80"
-              }`}
-            >
-              Partidos
-            </button>
+              <button
+                aria-disabled={!knockoutsPublished}
+                onClick={() => {
+                  if (!knockoutsPublished) {
+                    setMessage(
+                      "Las eliminatorias se habilitarán cuando terminen los grupos."
+                    );
 
-           <button
-  disabled={!knockoutsPublished}
-  onClick={() => {
-    if (!knockoutsPublished) {
-      setMessage(
-        "Las eliminatorias se habilitarán cuando terminen los grupos."
-      );
+                    return;
+                  }
 
-      return;
-    }
+                  setViewMode("knockouts");
+                }}
+                className={[
+                  "rounded-none px-5 py-3 font-black transition",
+                  viewMode === "knockouts"
+                    ? "bg-[#111] text-[#F5F1E8]"
+                    : "bg-black/[0.05] text-[#111] hover:bg-black/[0.08]",
+                  !knockoutsPublished ? "cursor-not-allowed opacity-50" : "",
+                ].join(" ")}
+              >
+                Eliminatorias
+              </button>
 
-    setViewMode("knockouts");
-  }}
-  className={[
-    "rounded-none px-5 py-3 font-black transition",
-    viewMode === "knockouts"
-      ? "bg-[#111] text-[#F5F1E8]"
-      : "bg-black/[0.05] text-[#111] hover:bg-black/[0.08]",
-    !knockoutsPublished ? "cursor-not-allowed opacity-50" : "",
-  ].join(" ")}
->
-  Eliminatorias
-</button>
+              <button
+                onClick={() => setViewMode("bonus")}
+                className={`rounded-none px-4 py-3 font-bold ${
+                  viewMode === "bonus"
+                    ? "bg-[#111] text-[#F5F1E8]"
+                    : "bg-black/[0.05] text-[#111]/80"
+                }`}
+              >
+                Preguntas bonus
+              </button>
+            </div>
 
-            <button
-              onClick={() => setViewMode("bonus")}
-              className={`rounded-none px-4 py-3 font-bold ${
-                viewMode === "bonus"
-                  ? "bg-[#111] text-[#F5F1E8]"
-                  : "bg-black/[0.05] text-[#111]/80"
-              }`}
-            >
-              Preguntas bonus
-            </button>
+            <div className="flex flex-wrap items-center gap-4 text-xs font-black">
+              <span className="text-emerald-700">Guardado ✓</span>
+
+              {lastSavedAt && (
+                <span className="text-[#111]/40">
+                  Última actualización {lastSavedAt}
+                </span>
+              )}
+            </div>
           </div>
 
           {viewMode === "matches" && (
