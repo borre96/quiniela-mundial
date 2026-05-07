@@ -219,12 +219,21 @@ export default function GruposPage() {
             />
           </Link>
 
-          <Link
-            href="/quiniela"
-            className="rounded-full bg-[#111] px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-[#F5F1E8] transition hover:-translate-y-0.5"
-          >
-            Ir a quiniela
-          </Link>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/rankings"
+              className="border border-black/20 px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition hover:bg-white/60"
+            >
+              La Tabla
+            </Link>
+
+            <Link
+              href="/quiniela"
+              className="bg-[#111] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5"
+            >
+              Quiniela
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -387,10 +396,9 @@ export default function GruposPage() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             {groups.map((group) => (
-              <Link
+              <article
                 key={group.group_id}
-                href={`/quiniela?groupId=${group.group_id}`}
-                className="block border border-black/10 bg-[#F5F1E8] p-5 transition hover:-translate-y-1 hover:shadow-md"
+                className="border border-black/10 bg-[#F5F1E8] p-5 transition hover:-translate-y-1 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -404,7 +412,7 @@ export default function GruposPage() {
                   </div>
 
                   <span className="border border-black/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-black/45">
-                    Entrar
+                    {group.members_count} miembro{group.members_count === 1 ? "" : "s"}
                   </span>
                 </div>
 
@@ -421,11 +429,7 @@ export default function GruposPage() {
 
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          copyToClipboard(group.invite_code);
-                        }}
+                        onClick={() => copyToClipboard(group.invite_code)}
                         className="bg-[#111] px-4 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5"
                       >
                         Copiar
@@ -434,13 +438,22 @@ export default function GruposPage() {
                   </div>
                 )}
 
-                <div className="mt-5 flex justify-between border-t border-black/10 pt-4 text-sm font-semibold text-black/55">
-                  <span>Miembros</span>
-                  <span className="font-black text-black">
-                    {group.members_count}
-                  </span>
+                <div className="mt-5 grid gap-3 border-t border-black/10 pt-4 sm:grid-cols-2">
+                  <Link
+                    href={`/quiniela?groupId=${group.group_id}`}
+                    className="flex items-center justify-center bg-[#111] px-4 py-4 text-center text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5"
+                  >
+                    Entrar a mi quiniela
+                  </Link>
+
+                  <Link
+                    href={`/rankings?groupId=${group.group_id}`}
+                    className="flex items-center justify-center border border-black/25 px-4 py-4 text-center text-xs font-black uppercase tracking-[0.14em] transition hover:bg-white/60"
+                  >
+                    Ver La Tabla
+                  </Link>
                 </div>
-              </Link>
+              </article>
             ))}
           </div>
         </section>

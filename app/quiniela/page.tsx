@@ -894,12 +894,21 @@ if (loading) {
             </div>
           </div>
 
-          <a
-            href="/grupos"
-            className="rounded-full border border-black/20 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-[#111] hover:text-[#F5F1E8]"
-          >
-            volver a Mis Tandas
-          </a>
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={groupId ? `/rankings?groupId=${groupId}` : "/rankings"}
+              className="rounded-full border border-[#111] bg-[#111] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-[#F5F1E8] transition hover:-translate-y-0.5 hover:bg-[#9F1D16]"
+            >
+              La Tabla
+            </a>
+
+            <a
+              href="/grupos"
+              className="rounded-full border border-black/20 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-black transition hover:bg-[#111] hover:text-[#F5F1E8]"
+            >
+              Mis Tandas
+            </a>
+          </div>
         </div>
       </nav>
 
