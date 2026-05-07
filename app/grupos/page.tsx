@@ -31,7 +31,7 @@ export default function GruposPage() {
   const [submitting, setSubmitting] = useState(false);
   const [activeMode, setActiveMode] = useState<ActiveMode>("join");
   const [createdModal, setCreatedModal] = useState<CreatedGroupModal | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -237,32 +237,32 @@ export default function GruposPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-5 py-8 md:px-8 md:py-10">
-        <section className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.26em] text-black/45">
+      <div className="mx-auto max-w-7xl px-5 py-5 md:px-8 md:py-6">
+        <section className="grid items-start gap-5 lg:grid-cols-[0.82fr_1.18fr]">
+          <div className="pt-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.26em] text-black/45">
               Grupos privados
             </p>
 
-            <h1 className="mt-4 text-5xl font-black uppercase leading-[0.94] tracking-[-0.06em] md:text-7xl">
+            <h1 className="mt-3 text-4xl font-black uppercase leading-[0.92] tracking-[-0.06em] md:text-6xl">
               Tus Tandas
               <br />
               del Mundial.
             </h1>
 
-            <p className="mt-7 max-w-xl text-base font-semibold leading-relaxed text-black/60">
-              Entra con código, crea un grupo privado o continúa jugando en una
-              Tanda existente.
+            <p className="mt-4 max-w-xl text-base font-semibold leading-relaxed text-black/60">
+              Tus grupos del Mundial. Entra, ajusta tu quiniela y revisa La
+              Tabla.
             </p>
 
             {message && (
-              <div className="mt-6 border border-black/15 bg-[#F8F3EA] px-5 py-4 text-sm font-black text-[#9F1D16]">
+              <div className="mt-4 border border-black/15 bg-[#F8F3EA] px-5 py-3 text-sm font-black text-[#9F1D16]">
                 {message}
               </div>
             )}
           </div>
 
-          <section className="border border-black/10 bg-[#F8F3EA] p-5 shadow-[0_24px_70px_rgba(17,17,17,0.08)] md:p-6">
+          <section className="border border-black/10 bg-[#F8F3EA] p-4 shadow-[0_18px_50px_rgba(17,17,17,0.07)] md:p-5">
             <div className="grid gap-2 border border-black/10 bg-[#F5F1E8] p-1 sm:grid-cols-2">
               <button
                 type="button"
@@ -270,7 +270,7 @@ export default function GruposPage() {
                   setActiveMode("join");
                   setMessage("");
                 }}
-                className={`px-4 py-4 text-sm font-black uppercase tracking-[0.14em] transition ${
+                className={`px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition ${
                   activeMode === "join"
                     ? "bg-[#111] text-[#F5F1E8]"
                     : "text-black/55 hover:bg-white/60"
@@ -285,7 +285,7 @@ export default function GruposPage() {
                   setActiveMode("create");
                   setMessage("");
                 }}
-                className={`px-4 py-4 text-sm font-black uppercase tracking-[0.14em] transition ${
+                className={`px-4 py-3 text-xs font-black uppercase tracking-[0.14em] transition ${
                   activeMode === "create"
                     ? "bg-[#111] text-[#F5F1E8]"
                     : "text-black/55 hover:bg-white/60"
@@ -296,16 +296,16 @@ export default function GruposPage() {
             </div>
 
             {activeMode === "join" && (
-              <div className="mt-8">
+              <div className="mt-5">
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#9F1D16]">
                   Entrar
                 </p>
 
-                <h2 className="mt-2 text-3xl font-black uppercase tracking-[-0.05em]">
+                <h2 className="mt-1 text-2xl font-black uppercase tracking-[-0.05em]">
                   Usa tu código
                 </h2>
 
-                <p className="mt-3 text-sm font-semibold leading-6 text-black/55">
+                <p className="mt-2 text-sm font-semibold leading-6 text-black/55">
                   Si ya te invitaron, pega aquí el código de tu grupo.
                 </p>
 
@@ -313,13 +313,13 @@ export default function GruposPage() {
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
                   placeholder="Código de grupo"
-                  className="mt-6 w-full border border-black/15 bg-[#F5F1E8] px-4 py-4 text-lg font-black uppercase tracking-[0.14em] outline-none placeholder:text-black/30 focus:border-black"
+                  className="mt-4 w-full border border-black/15 bg-[#F5F1E8] px-4 py-3 text-base font-black uppercase tracking-[0.14em] outline-none placeholder:text-black/30 focus:border-black"
                 />
 
                 <button
                   onClick={joinGroup}
                   disabled={submitting}
-                  className="mt-4 w-full bg-[#111] px-5 py-4 text-sm font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5 disabled:opacity-60"
+                  className="mt-3 w-full bg-[#111] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5 disabled:opacity-60"
                 >
                   {submitting ? "Entrando..." : "Entrar a mi Tanda"}
                 </button>
@@ -327,16 +327,16 @@ export default function GruposPage() {
             )}
 
             {activeMode === "create" && (
-              <div className="mt-8">
+              <div className="mt-5">
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#9F1D16]">
                   Crear
                 </p>
 
-                <h2 className="mt-2 text-3xl font-black uppercase tracking-[-0.05em]">
+                <h2 className="mt-1 text-2xl font-black uppercase tracking-[-0.05em]">
                   Abre tu Tanda
                 </h2>
 
-                <p className="mt-3 text-sm font-semibold leading-6 text-black/55">
+                <p className="mt-2 text-sm font-semibold leading-6 text-black/55">
                   Ponle nombre al grupo y usa tu código de creación.
                 </p>
 
@@ -344,20 +344,20 @@ export default function GruposPage() {
                   value={groupName}
                   onChange={(e) => setGroupName(e.target.value)}
                   placeholder="Nombre de tu Tanda"
-                  className="mt-6 w-full border border-black/15 bg-[#F5F1E8] px-4 py-4 text-base font-bold outline-none placeholder:text-black/30 focus:border-black"
+                  className="mt-4 w-full border border-black/15 bg-[#F5F1E8] px-4 py-3 text-base font-bold outline-none placeholder:text-black/30 focus:border-black"
                 />
 
                 <input
                   value={licenseCode}
                   onChange={(e) => setLicenseCode(e.target.value)}
                   placeholder="Código de creación"
-                  className="mt-4 w-full border border-black/15 bg-[#F5F1E8] px-4 py-4 text-base font-black uppercase tracking-[0.14em] outline-none placeholder:text-black/30 focus:border-black"
+                  className="mt-3 w-full border border-black/15 bg-[#F5F1E8] px-4 py-3 text-base font-black uppercase tracking-[0.14em] outline-none placeholder:text-black/30 focus:border-black"
                 />
 
                 <button
                   onClick={createGroup}
                   disabled={submitting}
-                  className="mt-4 w-full bg-[#111] px-5 py-4 text-sm font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5 disabled:opacity-60"
+                  className="mt-3 w-full bg-[#111] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5 disabled:opacity-60"
                 >
                   {submitting ? "Creando..." : "Crear mi Tanda"}
                 </button>
@@ -366,7 +366,7 @@ export default function GruposPage() {
           </section>
         </section>
 
-        <section className="mt-10 border border-black/10 bg-[#F8F3EA] p-5 md:p-6">
+        <section className="mt-6 border border-black/10 bg-[#F8F3EA] p-5 md:p-6">
           <div className="mb-6 flex items-center justify-between gap-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-black/45">
@@ -398,7 +398,7 @@ export default function GruposPage() {
             {groups.map((group) => (
               <article
                 key={group.group_id}
-                className="border border-black/10 bg-[#F5F1E8] p-5 transition hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(17,17,17,0.10)]"
+                className="border border-black/10 bg-[#F5F1E8] p-5 transition hover:-translate-y-1 hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -406,55 +406,54 @@ export default function GruposPage() {
                       {group.role === "owner" ? "Organizador" : "Participante"}
                     </p>
 
-                    <h3 className="mt-2 text-2xl font-black uppercase tracking-[-0.04em] md:text-3xl">
+                    <h3 className="mt-2 text-2xl font-black uppercase tracking-[-0.04em]">
                       {group.group_name}
                     </h3>
                   </div>
 
-                  <span className="shrink-0 border border-black/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-black/45">
-                    {group.members_count} miembro{group.members_count === 1 ? "" : "s"}
+                  <span className="border border-black/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-black/45">
+                    {group.members_count} miembro
+                    {group.members_count === 1 ? "" : "s"}
                   </span>
                 </div>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
+                {group.role === "owner" && (
+                  <div className="mt-5 flex flex-col gap-3 border border-black/10 bg-[#F8F3EA]/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.14em] text-black/35">
+                        Código para invitar
+                      </p>
+
+                      <p className="mt-1 select-all text-sm font-black tracking-[0.14em] text-black/55">
+                        {group.invite_code}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(group.invite_code)}
+                      className="border border-black/20 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-black/55 transition hover:bg-white/60"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                )}
+
+                <div className="mt-5 grid gap-3 border-t border-black/10 pt-4 sm:grid-cols-2">
                   <Link
                     href={`/rankings?groupId=${group.group_id}`}
-                    className="flex min-h-[72px] items-center justify-center bg-[#111] px-5 py-5 text-center text-sm font-black uppercase tracking-[0.16em] text-[#F5F1E8] shadow-[0_14px_34px_rgba(17,17,17,0.14)] transition hover:-translate-y-0.5 hover:bg-[#9F1D16]"
+                    className="flex items-center justify-center bg-[#111] px-4 py-4 text-center text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5"
                   >
                     Ver La Tabla
                   </Link>
 
                   <Link
                     href={`/quiniela?groupId=${group.group_id}`}
-                    className="flex min-h-[72px] items-center justify-center border border-black/25 px-5 py-5 text-center text-sm font-black uppercase tracking-[0.14em] transition hover:bg-white/60"
+                    className="flex items-center justify-center border border-black/25 px-4 py-4 text-center text-xs font-black uppercase tracking-[0.14em] transition hover:bg-white/60"
                   >
                     Ajustar quiniela
                   </Link>
                 </div>
-
-                {group.role === "owner" && (
-                  <div className="mt-5 border-t border-black/10 pt-4">
-                    <div className="flex flex-col gap-3 text-black/45 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em]">
-                          Código para invitar
-                        </p>
-
-                        <p className="mt-1 select-all text-sm font-black uppercase tracking-[0.16em] text-black/60">
-                          {group.invite_code}
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard(group.invite_code)}
-                        className="self-start border border-black/15 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-black/55 transition hover:border-black/30 hover:bg-white/60 sm:self-auto"
-                      >
-                        Copiar código
-                      </button>
-                    </div>
-                  </div>
-                )}
               </article>
             ))}
           </div>

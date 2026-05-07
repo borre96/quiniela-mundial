@@ -584,10 +584,55 @@ export default function AdminPage() {
         </div>
 
         {message && (
-          <div className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
-            {message}
-          </div>
-        )}
+  <div className="mb-6 rounded-2xl border border-amber-400/20 bg-amber-400/10 px-5 py-4 text-sm font-semibold text-amber-100">
+    {message}
+  </div>
+)}
+
+<section className="mb-10 rounded-3xl border border-amber-400/20 bg-amber-400/5 p-6">
+  <div className="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <p className="text-sm font-bold uppercase tracking-wide text-amber-300">
+        Operación Mundial
+      </p>
+
+      <h2 className="mt-1 text-3xl font-bold">
+        Publicar eliminatorias
+      </h2>
+
+      <p className="mt-2 max-w-2xl text-sm text-slate-400">
+        Cuando termine la fase de grupos y estén definidos los cruces oficiales,
+        publica las eliminatorias para desbloquear picks de bracket.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={async () => {
+        setMessage("Eliminatorias publicadas.");
+
+        // TODO:
+        // conectar publish real Supabase
+      }}
+      className="rounded-2xl bg-amber-300 px-5 py-4 font-black uppercase tracking-[0.14em] text-slate-950 transition hover:scale-[1.02]"
+    >
+      Publicar eliminatorias
+    </button>
+  </div>
+
+  <div className="mt-5 rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+    <p className="text-sm font-semibold text-slate-300">
+      Estado actual:
+      <span className="ml-2 font-black text-yellow-300">
+        Eliminatorias bloqueadas
+      </span>
+    </p>
+
+    <p className="mt-2 text-xs text-slate-500">
+      Los usuarios no podrán editar bracket hasta publicar cruces oficiales.
+    </p>
+  </div>
+</section>
 
         <section className="mb-10 rounded-3xl border border-emerald-500/20 bg-slate-900 p-6">
           <div className="mb-6">

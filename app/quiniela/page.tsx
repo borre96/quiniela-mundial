@@ -95,298 +95,373 @@ const BONUS_ORDER = [
 
 function QuinielaPageContent() {
   const [viewMode, setViewMode] = useState<ViewMode>("matches");
+
   const searchParams = useSearchParams();
   const groupId = searchParams.get("groupId");
+
   const [groupName, setGroupName] = useState<string | null>(null);
 
   const [matches, setMatches] = useState<Match[]>([]);
-  const [predictions, setPredictions] = useState<Record<string, Prediction>>({});
-  const [results, setResults] = useState<Record<string, MatchResult>>({});
 
-const [pickTypes, setPickTypes] = useState<SpecialPickType[]>([]);
+  const [predictions, setPredictions] = useState<
+    Record<string, Prediction>
+  >({});
 
-const [bonusSelections, setBonusSelections] =
-  useState<Record<string, string>>({});
+  const [results, setResults] = useState<
+    Record<string, MatchResult>
+  >({});
 
-const [bonusPickMeta, setBonusPickMeta] = useState<
-  Record<
+  const [pickTypes, setPickTypes] = useState<
+    SpecialPickType[]
+  >([]);
+
+  const [bonusSelections, setBonusSelections] =
+    useState<Record<string, string>>({});
+
+  const [bonusPickMeta, setBonusPickMeta] = useState<
+    Record<
+      string,
+      {
+        points_awarded: number | null;
+        scored_at: string | null;
+      }
+    >
+  >({});
+
+  const [players, setPlayers] = useState<Player[]>([]);
+
+  const [globalStats, setGlobalStats] =
+    useState<GlobalStats | null>(null);
+
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const [groupRankings, setGroupRankings] =
+    useState<GroupRanking[]>([]);
+
+  const [selectedGroupId, setSelectedGroupId] =
+    useState<string>("");
+
+  const [loading, setLoading] = useState(true);
+
+  const [saving, setSaving] = useState(false);
+
+  const [message, setMessage] = useState("");
+
+  const [lastSavedAt, setLastSavedAt] =
+    useState<string | null>(null);
+
+  const [knockoutsPublished, setKnockoutsPublished] =
+    useState(false);
+
+  const [lockedMatches, setLockedMatches] = useState<
+    Record<string, boolean>
+  >({});
+
+  const [bonusLocked, setBonusLocked] =
+    useState(false);
+
+  const [roundFilter, setRoundFilter] =
+    useState<RoundFilter>("unfilled");
+  useEffect(() => {
+  loadPage();
+}, [groupId]);
+
+async function loadPage() {
+  setLoading(true);
+  setMessage("");
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    window.location.href = "/login";
+    return;
+  }
+
+  setUserId(user.id);
+
+  if (groupId) {
+    const { data: myGroupsData, error: myGroupsError } = await supabase.rpc(
+      "get_my_groups"
+    );
+
+    if (myGroupsError) {
+      setMessage(myGroupsError.message);
+      setLoading(false);
+      return;
+    }
+
+    const activeGroup = (myGroupsData || []).find(
+      (group: { group_id: string }) => group.group_id === groupId
+    );
+
+    if (!activeGroup) {
+      setMessage("No tienes acceso a esta Tanda.");
+      setLoading(false);
+      return;
+    }
+
+    setGroupName(activeGroup.group_name);
+  } else {
+    setGroupName(null);
+  }
+
+  const { data: matchesData, error: matchesError } = await supabase
+    .from("matches")
+    .select(`
+      id,
+      match_number,
+      group_name,
+      kickoff_at,
+      prediction_deadline,
+      status,
+      home_team:teams!matches_home_team_id_fkey (
+        id,
+        name,
+        short_name,
+        flag_emoji
+      ),
+      away_team:teams!matches_away_team_id_fkey (
+        id,
+        name,
+        short_name,
+        flag_emoji
+      )
+    `)
+    .eq("stage", "group")
+    .order("match_number", { ascending: true });
+
+  if (matchesError) {
+    setMessage(matchesError.message);
+    setLoading(false);
+    return;
+  }
+
+  const formattedMatches =
+    (matchesData as unknown as Match[] | null)?.map((match) => ({
+      ...match,
+      home_team: Array.isArray(match.home_team)
+        ? match.home_team[0]
+        : match.home_team,
+      away_team: Array.isArray(match.away_team)
+        ? match.away_team[0]
+        : match.away_team,
+    })) || [];
+
+  setMatches(formattedMatches);
+
+  const { data: predictionsData, error: predictionsError } = await supabase
+    .from("predictions")
+    .select(`
+      id,
+      match_id,
+      home_score_pred,
+      away_score_pred,
+      points_awarded,
+      is_exact,
+      is_correct_outcome,
+      scored_at
+    `)
+    .eq("user_id", user.id);
+
+  if (predictionsError) {
+    setMessage(predictionsError.message);
+    setLoading(false);
+    return;
+  }
+
+  const mappedPredictions: Record<string, Prediction> = {};
+
+  for (const prediction of predictionsData || []) {
+    mappedPredictions[prediction.match_id] = {
+      id: prediction.id,
+      match_id: prediction.match_id,
+      home_score_pred: prediction.home_score_pred ?? "",
+      away_score_pred: prediction.away_score_pred ?? "",
+      points_awarded: prediction.points_awarded,
+      is_exact: prediction.is_exact,
+      is_correct_outcome: prediction.is_correct_outcome,
+      scored_at: prediction.scored_at,
+    };
+  }
+
+  setPredictions(mappedPredictions);
+
+  const { data: resultsData, error: resultsError } = await supabase
+    .from("match_results")
+    .select("match_id, home_score, away_score, is_final");
+
+  if (resultsError) {
+    setMessage(resultsError.message);
+    setLoading(false);
+    return;
+  }
+
+  const mappedResults: Record<string, MatchResult> = {};
+
+  for (const result of resultsData || []) {
+    mappedResults[result.match_id] = result;
+  }
+
+  setResults(mappedResults);
+
+  const { data: globalData } = await supabase
+    .from("leaderboard_global_v")
+    .select(`
+      total_points,
+      exact_hits,
+      correct_outcomes,
+      ranking_position
+    `)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (globalData) {
+    setGlobalStats(globalData as GlobalStats);
+  }
+
+  const { data: groupRankData, error: groupRankError } = await supabase
+    .from("leaderboard_group_v")
+    .select(`
+      group_id,
+      group_name,
+      ranking_position
+    `)
+    .eq("user_id", user.id)
+    .order("group_name", { ascending: true });
+
+  if (groupRankError) {
+    setMessage(groupRankError.message);
+    setLoading(false);
+    return;
+  }
+
+  const mappedGroupRankings = (groupRankData || []) as GroupRanking[];
+
+  setGroupRankings(mappedGroupRankings);
+
+  if (mappedGroupRankings.length > 0) {
+    setSelectedGroupId((current) => {
+      if (groupId && mappedGroupRankings.some((group) => group.group_id === groupId)) {
+        return groupId;
+      }
+
+      return current || mappedGroupRankings[0].group_id;
+    });
+  } else {
+    setSelectedGroupId("");
+  }
+
+  const { data: bonusTypesData, error: bonusTypesError } = await supabase
+    .from("special_pick_types")
+    .select("id, code, name, points");
+
+  if (bonusTypesError) {
+    setMessage(bonusTypesError.message);
+    setLoading(false);
+    return;
+  }
+
+  setPickTypes((bonusTypesData || []) as SpecialPickType[]);
+
+  const { data: userBonusData, error: userBonusError } = await supabase
+    .from("user_special_picks")
+    .select(`
+      pick_type_id,
+      selection,
+      points_awarded,
+      scored_at
+    `)
+    .eq("user_id", user.id);
+
+  if (userBonusError) {
+    setMessage(userBonusError.message);
+    setLoading(false);
+    return;
+  }
+
+  const mappedBonus: Record<string, string> = {};
+
+  const mappedBonusMeta: Record<
     string,
     {
       points_awarded: number | null;
       scored_at: string | null;
     }
-  >
->({});
+  > = {};
 
-const [players, setPlayers] = useState<Player[]>([]);
+  for (const bonus of userBonusData || []) {
+    mappedBonus[bonus.pick_type_id] = bonus.selection || "";
 
-  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [groupRankings, setGroupRankings] = useState<GroupRanking[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = useState<string>("");
+    mappedBonusMeta[bonus.pick_type_id] = {
+      points_awarded: bonus.points_awarded ?? null,
+      scored_at: bonus.scored_at ?? null,
+    };
+  }
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const [lockedMatches, setLockedMatches] = useState<Record<string, boolean>>({});
-  const [bonusLocked, setBonusLocked] = useState(false);
+  setBonusSelections(mappedBonus);
+  setBonusPickMeta(mappedBonusMeta);
 
-  const [roundFilter, setRoundFilter] = useState<RoundFilter>("unfilled");
-
-  useEffect(() => {
-    loadPage();
-  }, [groupId]);
-
-  async function loadPage() {
-    setLoading(true);
-    setMessage("");
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      window.location.href = "/login";
-      return;
-    }
-
-    setUserId(user.id);
-
-    if (groupId) {
-      const { data: myGroupsData, error: myGroupsError } = await supabase.rpc(
-        "get_my_groups"
-      );
-
-      if (myGroupsError) {
-        setMessage(myGroupsError.message);
-        setLoading(false);
-        return;
-      }
-
-      const activeGroup = (myGroupsData || []).find(
-        (group: { group_id: string }) => group.group_id === groupId
-      );
-
-      if (!activeGroup) {
-        setMessage("No tienes acceso a esta Tanda.");
-        setLoading(false);
-        return;
-      }
-
-      setGroupName(activeGroup.group_name);
-    } else {
-      setGroupName(null);
-    }
-
-    const { data: matchesData, error: matchesError } = await supabase
-      .from("matches")
-      .select(`
+  const { data: playersData, error: playersError } = await supabase
+    .from("players")
+    .select(`
+      id,
+      team_id,
+      full_name,
+      display_name,
+      position,
+      is_young_player_eligible,
+      is_active,
+      team:teams (
         id,
-        match_number,
-        group_name,
-        kickoff_at,
-        prediction_deadline,
-        status,
-        home_team:teams!matches_home_team_id_fkey (
-          id,
-          name,
-          short_name,
-          flag_emoji
-        ),
-        away_team:teams!matches_away_team_id_fkey (
-          id,
-          name,
-          short_name,
-          flag_emoji
-        )
-      `)
-      .eq("stage", "group")
-      .order("match_number", { ascending: true });
+        name,
+        short_name,
+        flag_emoji
+      )
+    `)
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
 
-    if (matchesError) {
-      setMessage(matchesError.message);
-      setLoading(false);
-      return;
-    }
+  if (playersError) {
+    setMessage(playersError.message);
+    setLoading(false);
+    return;
+  }
 
-    setMatches((matchesData || []) as unknown as Match[]);
+  setPlayers((playersData || []) as unknown as Player[]);
 
-    const { data: predictionsData, error: predictionsError } = await supabase
-      .from("predictions")
-      .select(`
-        id,
-        match_id,
-        home_score_pred,
-        away_score_pred,
-        points_awarded,
-        is_exact,
-        is_correct_outcome,
-        scored_at
-      `)
-      .eq("user_id", user.id);
+  const lockMap: Record<string, boolean> = {};
 
-    if (predictionsError) {
-      setMessage(predictionsError.message);
-      setLoading(false);
-      return;
-    }
-
-    const mappedPredictions: Record<string, Prediction> = {};
-
-    for (const prediction of predictionsData || []) {
-      mappedPredictions[prediction.match_id] = prediction;
-    }
-
-    setPredictions(mappedPredictions);
-
-    const { data: resultsData, error: resultsError } = await supabase
-      .from("match_results")
-      .select("match_id, home_score, away_score, is_final");
-
-    if (resultsError) {
-      setMessage(resultsError.message);
-      setLoading(false);
-      return;
-    }
-
-    const mappedResults: Record<string, MatchResult> = {};
-
-    for (const result of resultsData || []) {
-      mappedResults[result.match_id] = result;
-    }
-
-    setResults(mappedResults);
-
-   const { data: globalData } = await supabase
-  .from("leaderboard_global_v")
-  .select("total_points, exact_hits, correct_outcomes, ranking_position")
-  .eq("user_id", user.id)
-  .maybeSingle();
-
-if (globalData) {
-  setGlobalStats(globalData as GlobalStats);
-}
-
-const { data: groupRankData, error: groupRankError } = await supabase
-  .from("leaderboard_group_v")
-  .select("group_id, group_name, ranking_position")
-  .eq("user_id", user.id)
-  .order("group_name", { ascending: true });
-
-if (groupRankError) {
-  setMessage(groupRankError.message);
-  setLoading(false);
-  return;
-}
-
-const mappedGroupRankings = (groupRankData || []) as GroupRanking[];
-
-setGroupRankings(mappedGroupRankings);
-
-if (mappedGroupRankings.length > 0) {
-  setSelectedGroupId((current) => current || mappedGroupRankings[0].group_id);
-} else {
-  setSelectedGroupId("");
-}
-
-const { data: bonusTypesData, error: bonusTypesError } = await supabase
-  .from("special_pick_types")
-  .select("id, code, name, points");
-
-if (bonusTypesError) {
-  setMessage(bonusTypesError.message);
-  setLoading(false);
-  return;
-}
-
-    setPickTypes((bonusTypesData || []) as SpecialPickType[]);
-
-    const { data: userBonusData, error: userBonusError } = await supabase
-      .from("user_special_picks")
-      .select("pick_type_id, selection, points_awarded, scored_at")
-      .eq("user_id", user.id);
-
-    if (userBonusError) {
-      setMessage(userBonusError.message);
-      setLoading(false);
-      return;
-    }
-
-    const mappedBonus: Record<string, string> = {};
-    const mappedBonusMeta: Record<
-      string,
-      { points_awarded: number | null; scored_at: string | null }
-    > = {};
-
-    for (const bonus of userBonusData || []) {
-      mappedBonus[bonus.pick_type_id] = bonus.selection || "";
-      mappedBonusMeta[bonus.pick_type_id] = {
-        points_awarded: bonus.points_awarded ?? null,
-        scored_at: bonus.scored_at ?? null,
-      };
-    }
-
-    setBonusSelections(mappedBonus);
-    setBonusPickMeta(mappedBonusMeta);
-
-    const { data: playersData, error: playersError } = await supabase
-      .from("players")
-      .select(`
-        id,
-        team_id,
-        full_name,
-        display_name,
-        position,
-        is_young_player_eligible,
-        is_active,
-        team:teams (
-          id,
-          name,
-          short_name,
-          flag_emoji
-        )
-      `)
-      .eq("is_active", true)
-      .order("full_name", { ascending: true });
-
-    if (playersError) {
-      setMessage(playersError.message);
-      setLoading(false);
-      return;
-    }
-
-    setPlayers((playersData || []) as unknown as Player[]);
-
-    const lockMap: Record<string, boolean> = {};
-
-    for (const match of matchesData || []) {
-      const fallbackLocked =
-        new Date() >= new Date(match.prediction_deadline) ||
-        match.status !== "scheduled";
-
-      try {
-        const { data, error } = await supabase.rpc("is_match_locked", {
-          p_match_id: match.id,
-        });
-
-        lockMap[match.id] = error ? fallbackLocked : !!data;
-      } catch {
-        lockMap[match.id] = fallbackLocked;
-      }
-    }
-
-    setLockedMatches(lockMap);
+  for (const match of formattedMatches || []) {
+    const fallbackLocked =
+      new Date() >= new Date(match.prediction_deadline) ||
+      match.status !== "scheduled";
 
     try {
-      const { data, error } = await supabase.rpc("is_bonus_locked");
-      setBonusLocked(error ? false : !!data);
-    } catch {
-      setBonusLocked(false);
-    }
+      const { data, error } = await supabase.rpc("is_match_locked", {
+        p_match_id: match.id,
+      });
 
-    setLoading(false);
+      lockMap[match.id] = error ? fallbackLocked : !!data;
+    } catch {
+      lockMap[match.id] = fallbackLocked;
+    }
   }
+
+  setLockedMatches(lockMap);
+
+  try {
+    const { data, error } = await supabase.rpc("is_bonus_locked");
+    setBonusLocked(error ? false : !!data);
+  } catch {
+    setBonusLocked(false);
+  }
+
+  setKnockoutsPublished(false);
+  setLoading(false);
+}
 
   function isLocked(match: Match) {
     if (match.id in lockedMatches) {
@@ -547,160 +622,184 @@ if (bonusTypesError) {
   }
 
   async function saveAllPredictions() {
-    setMessage("");
+  setMessage("");
 
-    if (!userId) return;
+  if (!userId) return;
 
-    const rows = matches
-      .filter((match) => !isLocked(match))
-      .map((match) => {
-        const prediction = predictions[match.id];
+  const rows = matches
+    .filter((match) => !isLocked(match))
+    .map((match) => {
+      const prediction = predictions[match.id];
 
-        if (
-          !prediction ||
-          prediction.home_score_pred === "" ||
-          prediction.away_score_pred === ""
-        ) {
-          return null;
-        }
+      if (
+        !prediction ||
+        prediction.home_score_pred === "" ||
+        prediction.away_score_pred === ""
+      ) {
+        return null;
+      }
 
-        return {
-          user_id: userId,
-          match_id: match.id,
-          home_score_pred: prediction.home_score_pred,
-          away_score_pred: prediction.away_score_pred,
-          updated_at: new Date().toISOString(),
-        };
-      })
-      .filter(Boolean) as {
-        user_id: string;
-        match_id: string;
-        home_score_pred: number;
-        away_score_pred: number;
-        updated_at: string;
-      }[];
+      return {
+        user_id: userId,
+        match_id: match.id,
+        home_score_pred: prediction.home_score_pred,
+        away_score_pred: prediction.away_score_pred,
+        updated_at: new Date().toISOString(),
+      };
+    })
+    .filter(Boolean) as {
+      user_id: string;
+      match_id: string;
+      home_score_pred: number;
+      away_score_pred: number;
+      updated_at: string;
+    }[];
 
-    if (rows.length === 0) {
-      setMessage("No hay marcadores completos para guardar.");
-      return;
-    }
+  if (rows.length === 0) {
+    setMessage("No hay marcadores completos para guardar.");
+    return;
+  }
 
-    setSaving(true);
+  setSaving(true);
 
-    const { data, error } = await supabase
-      .from("predictions")
-      .upsert(rows, {
-        onConflict: "user_id,match_id",
-      })
-      .select(`
-        id,
-        match_id,
-        home_score_pred,
-        away_score_pred,
-        points_awarded,
-        is_exact,
-        is_correct_outcome,
-        scored_at
-      `);
+  const { data, error } = await supabase
+    .from("predictions")
+    .upsert(rows, {
+      onConflict: "user_id,match_id",
+    })
+    .select(`
+      id,
+      match_id,
+      home_score_pred,
+      away_score_pred,
+      points_awarded,
+      is_exact,
+      is_correct_outcome,
+      scored_at
+    `);
 
+  if (error) {
     setSaving(false);
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    const savedPredictions: Record<string, Prediction> = {};
-
-    for (const prediction of data || []) {
-      savedPredictions[prediction.match_id] = prediction;
-    }
-
-    setPredictions((current) => ({
-      ...current,
-      ...savedPredictions,
-    }));
-
-    setMessage(`Quiniela guardada. ${rows.length} partidos actualizados.`);
+    setMessage(error.message);
+    return;
   }
 
-  function updateBonus(pickId: string, value: string) {
-    setBonusSelections((current) => ({
-      ...current,
-      [pickId]: value,
-    }));
+  const savedPredictions: Record<string, Prediction> = {};
+
+  for (const prediction of data || []) {
+    savedPredictions[prediction.match_id] = prediction;
   }
 
-  function updateCustomBonus(pickId: string, value: string) {
-    setBonusSelections((current) => ({
-      ...current,
-      [pickId]: value ? `custom_player:${value}` : "custom_player:",
-    }));
+  setPredictions((current) => ({
+    ...current,
+    ...savedPredictions,
+  }));
+
+  setLastSavedAt(
+    new Date().toLocaleTimeString("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  );
+
+  setMessage(
+    `Quiniela guardada. ${rows.length} partidos actualizados.`
+  );
+
+  setSaving(false);
+}
+
+function updateBonus(pickId: string, value: string) {
+  setBonusSelections((current) => ({
+    ...current,
+    [pickId]: value,
+  }));
+}
+
+function updateCustomBonus(pickId: string, value: string) {
+  setBonusSelections((current) => ({
+    ...current,
+    [pickId]: value
+      ? `custom_player:${value}`
+      : "custom_player:",
+  }));
+}
+
+async function saveBonus() {
+  setMessage("");
+
+  if (!userId) return;
+
+  if (bonusLocked) {
+    setMessage("Selecciones bonus cerradas.");
+    return;
   }
 
-  async function saveBonus() {
-    setMessage("");
+  const missing = pickTypes.filter(
+    (pickType) => !bonusSelections[pickType.id]
+  );
 
-    if (!userId) return;
+  if (missing.length > 0) {
+    setMessage("Completa todas las preguntas bonus.");
+    return;
+  }
 
-    if (bonusLocked) {
-      setMessage("Selecciones bonus cerradas.");
-      return;
-    }
+  setSaving(true);
 
-    const missing = pickTypes.filter((pickType) => !bonusSelections[pickType.id]);
+  const rows = pickTypes.map((pickType) => ({
+    user_id: userId,
+    pick_type_id: pickType.id,
+    selection: bonusSelections[pickType.id],
+    updated_at: new Date().toISOString(),
+  }));
 
-    if (missing.length > 0) {
-      setMessage("Completa todas las preguntas bonus.");
-      return;
-    }
-    setSaving(true);
-
-    const rows = pickTypes.map((pickType) => ({
-      user_id: userId,
-      pick_type_id: pickType.id,
-      selection: bonusSelections[pickType.id],
-      updated_at: new Date().toISOString(),
-    }));
-
-    const { error } = await supabase.from("user_special_picks").upsert(rows, {
+  const { error } = await supabase
+    .from("user_special_picks")
+    .upsert(rows, {
       onConflict: "user_id,pick_type_id",
     });
 
+  if (error) {
     setSaving(false);
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    setMessage("Preguntas bonus guardadas.");
-    await loadPage();
+    setMessage(error.message);
+    return;
   }
 
-  function formatDate(date: string) {
-    return new Intl.DateTimeFormat("es-MX", {
-      day: "2-digit",
-      month: "short",
+  setLastSavedAt(
+    new Date().toLocaleTimeString("es-MX", {
       hour: "2-digit",
       minute: "2-digit",
-    }).format(new Date(date));
-  }
+    })
+  );
 
-  function getPlayerOptionsForPick(code: string) {
+  setMessage("Preguntas bonus guardadas.");
 
+  setSaving(false);
+
+  await loadPage();
+}
+
+function formatDate(date: string) {
+  return new Intl.DateTimeFormat("es-MX", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
+}
+
+function getPlayerOptionsForPick(code: string) {
   if (code === "best_goalkeeper") {
     return players
       .filter(
         (player) =>
           player.position === "goalkeeper"
       )
-      .sort(
-        (a,b)=>
-          a.full_name.localeCompare(
-            b.full_name,
-            "es"
-          )
+      .sort((a, b) =>
+        a.full_name.localeCompare(
+          b.full_name,
+          "es"
+        )
       );
   }
 
@@ -938,63 +1037,100 @@ if (loading) {
             </div>
 
             <div className="grid w-full gap-3 lg:max-w-[720px] lg:grid-cols-[1fr_1fr_1.25fr]">
-              <div className="rounded-none border border-black/10 bg-[#EFE6D6] px-5 py-4 text-center">
-                <p className="text-[11px] uppercase tracking-[0.14em] text-[#111]/40">
-                  Ranking grupo
-                </p>
+  <div className="rounded-none border border-black/10 bg-[#EFE6D6] px-5 py-4 text-center">
+    <p className="text-[11px] uppercase tracking-[0.14em] text-[#111]/40">
+      Ranking grupo
+    </p>
 
-                <p className="mt-1 text-3xl font-black">
-                  #{selectedGroupRanking?.ranking_position ?? "-"}
-                </p>
+    <p className="mt-1 text-3xl font-black">
+      #{selectedGroupRanking?.ranking_position ?? "-"}
+    </p>
 
-                {groupRankings.length > 0 ? (
-                  <select
-                    value={selectedGroupId}
-                    onChange={(e) => setSelectedGroupId(e.target.value)}
-                    className="mt-2 w-full rounded-none border border-black/10 bg-[#F5F1E8]/70 px-2 py-1 text-center text-[11px] font-bold text-[#9F1D16] outline-none"
-                  >
-                    {groupRankings.map((group) => (
-                      <option key={group.group_id} value={group.group_id}>
-                        {group.group_name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="mt-1 text-[10px] text-[#111]/35">
-                    sin grupo activo
-                  </p>
-                )}
-              </div>
+    {groupRankings.length > 0 ? (
+      <select
+        value={selectedGroupId}
+        onChange={(e) => setSelectedGroupId(e.target.value)}
+        className="mt-2 w-full rounded-none border border-black/10 bg-[#F5F1E8]/70 px-2 py-1 text-center text-[11px] font-bold text-[#9F1D16] outline-none"
+      >
+        {groupRankings.map((group) => (
+          <option key={group.group_id} value={group.group_id}>
+            {group.group_name}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <p className="mt-1 text-[10px] text-[#111]/35">
+        sin grupo activo
+      </p>
+    )}
+  </div>
 
-              <div className="rounded-none border border-black/10 bg-[#EFE6D6] px-5 py-4 text-center">
-                <p className="text-[11px] uppercase tracking-[0.14em] text-[#111]/40">
-                  Ranking global
-                </p>
+  <div className="rounded-none border border-black/10 bg-[#EFE6D6] px-5 py-4 text-center">
+    <p className="text-[11px] uppercase tracking-[0.14em] text-[#111]/40">
+      Ranking global
+    </p>
 
-                <p className="mt-1 text-3xl font-black">
-                  #{globalStats?.ranking_position ?? "-"}
-                </p>
+    <p className="mt-1 text-3xl font-black">
+      #{globalStats?.ranking_position ?? "-"}
+    </p>
 
-                <p className="mt-2 text-[10px] font-bold text-[#111]/35">
-                  posición general
-                </p>
-              </div>
+    <p className="mt-2 text-[10px] font-bold text-[#111]/35">
+      posición general
+    </p>
+  </div>
 
-              <div className="rounded-none border border-black/15 bg-[#111] px-6 py-4 text-center">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#F5F1E8]/70">
-                  Puntos totales
-                </p>
+  <div className="rounded-none border border-black/15 bg-[#111] px-6 py-4 text-center">
+    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#F5F1E8]/70">
+      Puntos totales
+    </p>
 
-                <p className="mt-1 text-4xl font-black text-[#F5F1E8]">
-                  {globalStats?.total_points ?? 0}
-                </p>
+    <p className="mt-1 text-4xl font-black text-[#F5F1E8]">
+      {globalStats?.total_points ?? 0}
+    </p>
 
-                <p className="mt-1 text-[11px] font-bold text-[#F5F1E8]/55">
-                  grupos + eliminatorias + bonus
-                </p>
-              </div>
-            </div>
-          </div>
+    <p className="mt-1 text-[11px] font-bold text-[#F5F1E8]/55">
+      grupos + eliminatorias + bonus
+    </p>
+  </div>
+</div>
+
+<div className="mt-4 flex flex-wrap items-center gap-3">
+  <div className="border border-black/10 bg-[#EFE6D6] px-4 py-2">
+    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-black/40">
+      Estado
+    </p>
+
+    <p className="mt-1 text-sm font-black text-emerald-700">
+      Guardado ✓
+    </p>
+  </div>
+
+  {lastSavedAt && (
+    <div className="border border-black/10 bg-[#F5F1E8] px-4 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-black/40">
+        Última actualización
+      </p>
+
+      <p className="mt-1 text-sm font-black">
+        {lastSavedAt}
+      </p>
+    </div>
+  )}
+
+  {!knockoutsPublished && (
+    <div className="border border-amber-300/30 bg-amber-300/10 px-4 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-800">
+        Eliminatorias
+      </p>
+
+      <p className="mt-1 text-sm font-black text-amber-900">
+        Las eliminatorias se habilitarán cuando terminen los grupos.
+      </p>
+    </div>
+  )}
+</div>
+
+</div>
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button
@@ -1008,17 +1144,29 @@ if (loading) {
               Partidos
             </button>
 
-            <button
-              onClick={() => setViewMode("knockouts")}
-              className={[
-                "rounded-none px-5 py-3 font-black transition",
-                viewMode === "knockouts"
-                  ? "bg-[#111] text-[#F5F1E8]"
-                  : "bg-black/[0.05] text-[#111] hover:bg-black/[0.08]",
-              ].join(" ")}
-            >
-              Eliminatorias
-            </button>
+           <button
+  disabled={!knockoutsPublished}
+  onClick={() => {
+    if (!knockoutsPublished) {
+      setMessage(
+        "Las eliminatorias se habilitarán cuando terminen los grupos."
+      );
+
+      return;
+    }
+
+    setViewMode("knockouts");
+  }}
+  className={[
+    "rounded-none px-5 py-3 font-black transition",
+    viewMode === "knockouts"
+      ? "bg-[#111] text-[#F5F1E8]"
+      : "bg-black/[0.05] text-[#111] hover:bg-black/[0.08]",
+    !knockoutsPublished ? "cursor-not-allowed opacity-50" : "",
+  ].join(" ")}
+>
+  Eliminatorias
+</button>
 
             <button
               onClick={() => setViewMode("bonus")}
