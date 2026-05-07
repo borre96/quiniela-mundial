@@ -21,7 +21,7 @@ export default function HomePage() {
             </p>
 
             <Link
-              href="/login"
+              href="/login?mode=login"
               className="rounded-full border border-[#D8B45A]/60 bg-[#111] px-6 py-3 text-xs font-black uppercase tracking-[0.18em] text-[#F5F1E8] shadow-[0_10px_28px_rgba(17,17,17,0.18)] transition hover:-translate-y-0.5 hover:bg-[#9F1D16]"
             >
               Iniciar sesión
@@ -45,7 +45,7 @@ export default function HomePage() {
             </span>
             <br />
             <span className="relative inline-block whitespace-nowrap">
-               Y Nuestra Banda
+              Y Nuestra Banda
               <span className="absolute -bottom-1 left-1 h-[5px] w-[96%] bg-[#9F1D16]" />
             </span>
             <br />
@@ -64,9 +64,9 @@ export default function HomePage() {
           </p>
 
           {/* CTA PREMIUM */}
-         <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-start md:items-start">
+          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-start md:items-start">
             <Link
-              href="/login"
+              href="/login?mode=code"
               className="group inline-flex items-center justify-center gap-3 rounded-lg border border-[#D8B45A]/70 bg-[#111] px-8 py-4 text-sm font-black uppercase tracking-[0.15em] text-[#F5F1E8] shadow-[0_16px_40px_rgba(17,17,17,0.18)] transition hover:-translate-y-0.5 hover:bg-[#9F1D16]"
             >
               <span className="h-2 w-2 rounded-full bg-[#D8B45A] transition group-hover:bg-[#F5F1E8]" />

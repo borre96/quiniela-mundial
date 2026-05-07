@@ -127,7 +127,6 @@ const [players, setPlayers] = useState<Player[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [savingMatchId, setSavingMatchId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [lockedMatches, setLockedMatches] = useState<Record<string, boolean>>({});
   const [bonusLocked, setBonusLocked] = useState(false);
@@ -547,51 +546,82 @@ if (bonusTypesError) {
     }));
   }
 
-  async function savePrediction(match: Match) {
+  async function saveAllPredictions() {
     setMessage("");
 
     if (!userId) return;
 
-    if (isLocked(match)) {
-      setMessage("Partido bloqueado.");
+    const rows = matches
+      .filter((match) => !isLocked(match))
+      .map((match) => {
+        const prediction = predictions[match.id];
+
+        if (
+          !prediction ||
+          prediction.home_score_pred === "" ||
+          prediction.away_score_pred === ""
+        ) {
+          return null;
+        }
+
+        return {
+          user_id: userId,
+          match_id: match.id,
+          home_score_pred: prediction.home_score_pred,
+          away_score_pred: prediction.away_score_pred,
+          updated_at: new Date().toISOString(),
+        };
+      })
+      .filter(Boolean) as {
+        user_id: string;
+        match_id: string;
+        home_score_pred: number;
+        away_score_pred: number;
+        updated_at: string;
+      }[];
+
+    if (rows.length === 0) {
+      setMessage("No hay marcadores completos para guardar.");
       return;
     }
 
-    const prediction = predictions[match.id];
+    setSaving(true);
 
-    if (
-      !prediction ||
-      prediction.home_score_pred === "" ||
-      prediction.away_score_pred === ""
-    ) {
-      setMessage("Completa ambos marcadores.");
-      return;
-    }
-
-    setSavingMatchId(match.id);
-
-    const { error } = await supabase.from("predictions").upsert(
-      {
-        user_id: userId,
-        match_id: match.id,
-        home_score_pred: prediction.home_score_pred,
-        away_score_pred: prediction.away_score_pred,
-        updated_at: new Date().toISOString(),
-      },
-      {
+    const { data, error } = await supabase
+      .from("predictions")
+      .upsert(rows, {
         onConflict: "user_id,match_id",
-      }
-    );
+      })
+      .select(`
+        id,
+        match_id,
+        home_score_pred,
+        away_score_pred,
+        points_awarded,
+        is_exact,
+        is_correct_outcome,
+        scored_at
+      `);
 
-       setSavingMatchId(null);
+    setSaving(false);
 
     if (error) {
       setMessage(error.message);
       return;
     }
 
-    setMessage("Pick guardado.");
-    await loadPage();
+    const savedPredictions: Record<string, Prediction> = {};
+
+    for (const prediction of data || []) {
+      savedPredictions[prediction.match_id] = prediction;
+    }
+
+    setPredictions((current) => ({
+      ...current,
+      ...savedPredictions,
+    }));
+
+    setMessage(`Quiniela guardada. ${rows.length} partidos actualizados.`);
   }
 
   function updateBonus(pickId: string, value: string) {
@@ -1078,13 +1108,28 @@ if (loading) {
 
         {viewMode === "matches" && (
           <div className="space-y-4">
-            <div className="flex flex-col gap-2 border-y border-black/15 py-4 md:flex-row md:items-center md:justify-between">
-              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/45">
-                Boletos de partido
-              </p>
-              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#9F1D16]">
-                Verde acierto · Rojo error · Dorado por calificar
-              </p>
+            <div className="sticky top-0 z-20 -mx-5 flex flex-col gap-3 border-y border-black/15 bg-[#F5F1E8]/95 px-5 py-4 backdrop-blur-md md:mx-0 md:flex-row md:items-center md:justify-between md:px-0">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-black/45">
+                  Boletos de partido
+                </p>
+                <p className="mt-1 text-[11px] font-black uppercase tracking-[0.18em] text-[#9F1D16]">
+                  Verde acierto · Rojo error · Dorado por calificar
+                </p>
+              </div>
+
+              <button
+                onClick={saveAllPredictions}
+                disabled={saving}
+                className={[
+                  "rounded-none border px-5 py-3 text-xs font-black uppercase tracking-[0.16em] transition",
+                  saving
+                    ? "cursor-not-allowed border-black/10 bg-black/10 text-black/35"
+                    : "border-[#111] bg-[#111] text-[#F5F1E8] shadow-[0_14px_34px_rgba(17,17,17,0.18)] hover:-translate-y-0.5 hover:bg-[#9F1D16]",
+                ].join(" ")}
+              >
+                {saving ? "Guardando..." : "Guardar quiniela"}
+              </button>
             </div>
             {visibleMatches.map((match) => {
               const matchLocked = isLocked(match);
@@ -1144,7 +1189,7 @@ if (loading) {
                     </div>
                   </div>
 
-                  <div className="grid gap-3 pl-2 md:grid-cols-[1fr_64px_28px_64px_1fr_auto]">
+                  <div className="grid gap-3 pl-2 md:grid-cols-[1fr_64px_28px_64px_1fr]">
                     <div className={["rounded-none p-3 font-bold", tone.team].join(" ")}>
                       {match.home_team.flag_emoji} {match.home_team.name}
                     </div>
@@ -1194,23 +1239,6 @@ if (loading) {
                     <div className={["rounded-none p-3 font-bold", tone.team].join(" ")}>
                       {match.away_team.flag_emoji} {match.away_team.name}
                     </div>
-
-                    <button
-                      onClick={() => savePrediction(match)}
-                      disabled={matchLocked || savingMatchId === match.id}
-                      className={[
-                        "rounded-none px-4 font-bold",
-                        matchLocked || savingMatchId === match.id
-                          ? "cursor-not-allowed border border-white/10 bg-white/5 text-[#F5F1E8]/35"
-                          : "bg-[#F5F1E8] text-[#111] shadow-[0_10px_25px_rgba(0,0,0,0.18)] hover:bg-[#C9A24D]",
-                      ].join(" ")}
-                    >
-                      {matchLocked
-                        ? "Cerrado"
-                        : savingMatchId === match.id
-                          ? "Guardando..."
-                          : "Guardar"}
-                    </button>
                   </div>
                 </div>
               );

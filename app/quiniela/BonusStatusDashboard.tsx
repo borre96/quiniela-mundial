@@ -375,8 +375,8 @@ export default function BonusStatusDashboard({
         })}
       </section>
 
-      <section className="sticky bottom-4 z-20 rounded-none border border-black/15 bg-[#111] p-4 text-[#F5F1E8] shadow-[0_18px_50px_rgba(0,0,0,0.25)]">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <section className="rounded-none border border-black/15 bg-[#111] p-4 text-[#F5F1E8] shadow-[0_18px_50px_rgba(0,0,0,0.16)] md:p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#F5F1E8]/45">
               Guardado de bonus
@@ -396,7 +396,7 @@ export default function BonusStatusDashboard({
             onClick={saveBonus}
             disabled={saving || bonusLocked}
             className={[
-              "rounded-none border px-5 py-3 text-sm font-black uppercase tracking-[0.12em] transition",
+              "w-full rounded-none border px-5 py-3 text-sm font-black uppercase tracking-[0.12em] transition md:w-auto",
               saving || bonusLocked
                 ? "cursor-not-allowed border-white/10 bg-white/5 text-[#F5F1E8]/35"
                 : "border-[#D8B45A]/40 bg-[#F5F1E8] text-[#111] hover:bg-[#D8B45A]",
