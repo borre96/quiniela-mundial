@@ -20,6 +20,14 @@ type CreatedGroupModal = {
   inviteCode: string;
 };
 
+function normalizeCode(value: string) {
+  return value.trim().toUpperCase();
+}
+
+function isCreatorLicenseCode(value: string) {
+  return normalizeCode(value).startsWith("LIC-");
+}
+
 export default function GruposPage() {
   const [groups, setGroups] = useState<GroupRow[]>([]);
   const [groupName, setGroupName] = useState("");
@@ -81,21 +89,29 @@ export default function GruposPage() {
     setMessage("");
     setCopyMessage("");
 
-    if (!groupName.trim()) {
+    const normalizedGroupName = groupName.trim();
+    const normalizedLicenseCode = normalizeCode(licenseCode);
+
+    if (!normalizedGroupName) {
       setMessage("Ponle nombre a tu Tanda.");
       return;
     }
 
-    if (!licenseCode.trim()) {
+    if (!normalizedLicenseCode) {
       setMessage("Ingresa tu código de creación.");
+      return;
+    }
+
+    if (!isCreatorLicenseCode(normalizedLicenseCode)) {
+      setMessage("Para crear una Tanda necesitas un código tipo LIC-XXXXXX.");
       return;
     }
 
     setSubmitting(true);
 
     const { data, error } = await supabase.rpc("create_group_with_license", {
-      p_group_name: groupName.trim(),
-      p_license_code: licenseCode.trim().toUpperCase(),
+      p_group_name: normalizedGroupName,
+      p_license_code: normalizedLicenseCode,
     });
 
     if (error) {
@@ -125,15 +141,27 @@ export default function GruposPage() {
     setMessage("");
     setCopyMessage("");
 
-    if (!joinCode.trim()) {
+    const normalizedJoinCode = normalizeCode(joinCode);
+
+    if (!normalizedJoinCode) {
       setMessage("Ingresa tu código de grupo.");
+      return;
+    }
+
+    if (isCreatorLicenseCode(normalizedJoinCode)) {
+      setLicenseCode(normalizedJoinCode);
+      setJoinCode("");
+      setActiveMode("create");
+      setMessage(
+        "Ese es un código de creación. Ponle nombre a tu Tanda para abrir tu grupo.",
+      );
       return;
     }
 
     setSubmitting(true);
 
     const { error } = await supabase.rpc("join_group_by_code", {
-      p_invite_code: joinCode.trim().toUpperCase(),
+      p_invite_code: normalizedJoinCode,
     });
 
     if (error) {
@@ -306,13 +334,15 @@ export default function GruposPage() {
                 </h2>
 
                 <p className="mt-2 text-sm font-semibold leading-6 text-black/55">
-                  Si ya te invitaron, pega aquí el código de tu grupo.
+                  Si ya te invitaron, pega aquí el código de tu grupo. Si tienes
+                  un código de creación tipo LIC-XXXXXX, también puedes pegarlo
+                  aquí y te llevamos al flujo correcto.
                 </p>
 
                 <input
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
-                  placeholder="Código de grupo"
+                  placeholder="Código de grupo o LIC-XXXXXX"
                   className="mt-4 w-full border border-black/15 bg-[#F5F1E8] px-4 py-3 text-base font-black uppercase tracking-[0.14em] outline-none placeholder:text-black/30 focus:border-black"
                 />
 
@@ -321,7 +351,7 @@ export default function GruposPage() {
                   disabled={submitting}
                   className="mt-3 w-full bg-[#111] px-5 py-3 text-xs font-black uppercase tracking-[0.14em] text-[#F5F1E8] transition hover:-translate-y-0.5 disabled:opacity-60"
                 >
-                  {submitting ? "Entrando..." : "Entrar a mi Tanda"}
+                  {submitting ? "Entrando..." : "Continuar"}
                 </button>
               </div>
             )}
@@ -337,7 +367,8 @@ export default function GruposPage() {
                 </h2>
 
                 <p className="mt-2 text-sm font-semibold leading-6 text-black/55">
-                  Ponle nombre al grupo y usa tu código de creación.
+                  Ponle nombre al grupo y usa tu código de creación. Cada código
+                  LIC crea una sola Tanda y después queda consumido.
                 </p>
 
                 <input
@@ -350,7 +381,7 @@ export default function GruposPage() {
                 <input
                   value={licenseCode}
                   onChange={(e) => setLicenseCode(e.target.value)}
-                  placeholder="Código de creación"
+                  placeholder="Código de creación LIC-XXXXXX"
                   className="mt-3 w-full border border-black/15 bg-[#F5F1E8] px-4 py-3 text-base font-black uppercase tracking-[0.14em] outline-none placeholder:text-black/30 focus:border-black"
                 />
 
