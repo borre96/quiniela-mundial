@@ -53,17 +53,47 @@ const PLAYER_BONUS_CODES = [
   "best_young_player",
 ];
 
+function EmojiFlag({ value }: { value?: string | null }) {
+  return (
+    <span
+      className="inline-block leading-none"
+      style={{
+        fontFamily:
+          '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+      }}
+      aria-hidden="true"
+    >
+      {value || "🏳️"}
+    </span>
+  );
+}
+
+function TeamLabel({ team }: { team?: TeamOption | null }) {
+  if (!team) return <span>Sin selección</span>;
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <EmojiFlag value={team.flag_emoji} />
+      <span>{team.name || team.short_name}</span>
+    </span>
+  );
+}
+
 function getSelectionLabel(
   pick: SpecialPickType,
   value: string,
-  teamOptions: TeamOption[]
+  teamOptions: TeamOption[],
 ) {
   if (!value) return "Sin selección";
 
   if (TEAM_BONUS_CODES.includes(pick.code)) {
     const team = teamOptions.find((option) => option.id === value);
 
-    return team ? `${team.flag_emoji} ${team.name}` : value;
+    return team ? (
+      <TeamLabel team={team} />
+    ) : (
+      value
+    );
   }
 
   if (value.startsWith("custom_player:")) {
@@ -188,7 +218,6 @@ export default function BonusStatusDashboard({
             </div>
           </div>
         </div>
-
       </section>
 
       <section className="grid gap-4">
@@ -217,7 +246,7 @@ export default function BonusStatusDashboard({
           const selectionLabel = getSelectionLabel(
             pick,
             currentSelection,
-            teamOptions
+            teamOptions,
           );
 
           return (
@@ -275,7 +304,9 @@ export default function BonusStatusDashboard({
                     <select
                       value={currentSelection}
                       disabled={bonusLocked}
-                      onChange={(event) => updateBonus(pick.id, event.target.value)}
+                      onChange={(event) =>
+                        updateBonus(pick.id, event.target.value)
+                      }
                       className={[
                         "h-12 w-full rounded-none border px-4 text-sm font-bold outline-none",
                         bonusLocked
@@ -287,7 +318,8 @@ export default function BonusStatusDashboard({
 
                       {teamOptions.map((team) => (
                         <option key={team.id} value={team.id}>
-                          {team.flag_emoji} {team.name}
+                          {team.flag_emoji || "🏳️"}{" "}
+                          {team.name || team.short_name}
                         </option>
                       ))}
                     </select>
@@ -318,7 +350,9 @@ export default function BonusStatusDashboard({
                             value={player.display_name || player.full_name}
                           >
                             {player.team?.flag_emoji
-                              ? `${player.team.flag_emoji} ${player.team.name}`
+                              ? `${player.team.flag_emoji} ${
+                                  player.team.name || player.team.short_name
+                                }`
                               : "Jugador"}
                           </option>
                         ))}

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import BonusStatusDashboard from "./BonusStatusDashboard";
 import KnockoutBracketSection from "./KnockoutBracketSection";
+import { TeamLabel } from "@/app/components/TeamLabel";
 
 type Team = {
   id: string;
@@ -1308,7 +1309,7 @@ if (loading) {
 
                   <div className="grid gap-3 pl-2 md:grid-cols-[1fr_64px_28px_64px_1fr]">
                     <div className={["rounded-none p-3 font-bold", tone.team].join(" ")}>
-                      {match.home_team.flag_emoji} {match.home_team.name}
+                      <TeamLabel team={match.home_team} />
                     </div>
 
                     <input
@@ -1354,7 +1355,7 @@ if (loading) {
                     />
 
                     <div className={["rounded-none p-3 font-bold", tone.team].join(" ")}>
-                      {match.away_team.flag_emoji} {match.away_team.name}
+                      <TeamLabel team={match.away_team} />
                     </div>
                   </div>
                 </div>

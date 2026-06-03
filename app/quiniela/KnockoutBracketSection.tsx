@@ -70,6 +70,35 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+function TeamLabel({
+  team,
+  compact = false,
+}: {
+  team: SlotTeam;
+  compact?: boolean;
+}) {
+  const label = compact
+    ? team.short_name || team.name || "Por definir"
+    : team.name || team.short_name || "Por definir";
+
+  return (
+    <span className="flex min-w-0 items-center gap-2">
+      <span
+        className="shrink-0 text-sm leading-none"
+        style={{
+          fontFamily:
+            '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+        }}
+        aria-hidden="true"
+      >
+        {team.flag_emoji || "🏳️"}
+      </span>
+
+      <span className="truncate font-black leading-tight">{label}</span>
+    </span>
+  );
+}
+
 const BRACKET_GRID =
   "grid-cols-[168px_150px_140px_128px_190px_128px_140px_150px_168px]";
 
@@ -847,14 +876,7 @@ function TieCard({
                 !isSelected && selectedTeamId && "opacity-55",
               )}
             >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="shrink-0 text-sm">
-                  {team.flag_emoji ?? "🏳️"}
-                </span>
-                <span className="truncate font-black leading-tight">
-                  {team.name}
-                </span>
-              </span>
+              <TeamLabel team={team} compact={compact} />
 
               <span
                 className={cx(
