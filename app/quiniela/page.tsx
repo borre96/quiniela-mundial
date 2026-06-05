@@ -603,6 +603,8 @@ async function loadPage() {
     field: "home_score_pred" | "away_score_pred",
     value: string
   ) {
+    if (!/^\d*$/.test(value)) return;
+
     const cleanValue = value === "" ? "" : Number(value);
 
     setPredictions((current) => ({
@@ -1313,7 +1315,9 @@ if (loading) {
                     </div>
 
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       disabled={matchLocked}
                       value={predictions[match.id]?.home_score_pred ?? ""}
                       onChange={(e) =>
@@ -1336,7 +1340,9 @@ if (loading) {
                     </div>
 
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       disabled={matchLocked}
                       value={predictions[match.id]?.away_score_pred ?? ""}
                       onChange={(e) =>
