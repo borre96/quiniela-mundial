@@ -460,7 +460,12 @@ async function loadPage() {
     setBonusLocked(false);
   }
 
-  setKnockoutsPublished(false);
+  const { count } = await supabase
+  .from("knockout_ties")
+  .select("*", { count: "exact", head: true })
+  .eq("is_published", true);
+
+setKnockoutsPublished((count ?? 0) > 0);
   setLoading(false);
 }
 
