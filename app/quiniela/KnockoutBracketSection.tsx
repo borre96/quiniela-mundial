@@ -862,7 +862,7 @@ function TieCard({
                   ? "cursor-not-allowed border-black/10 bg-[#EEE7DA] text-black/35"
                   : "border-black/16 bg-[#F5F1E8] text-[#111] hover:border-[#9F1D16]/55 hover:bg-white",
                 isSelected &&
-                  "border-[#9F1D16] bg-[#111] text-[#F5F1E8] shadow-[inset_0_0_0_1px_rgba(216,180,90,0.55)]",
+                 "border-[#9F1D16] bg-[#F1D27A] text-[#241A10] shadow-[inset_0_0_0_1px_rgba(159,29,22,0.35)]",
                 isSelected &&
                   status === "correct" &&
                   "border-emerald-500 bg-emerald-100 text-emerald-800 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.45)]",
